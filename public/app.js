@@ -97,7 +97,6 @@ async function handleRegister(e) {
     const data = await API.post('/auth/register', {
       name: document.getElementById('regName').value,
       email,
-      phone: document.getElementById('regPhone').value,
       password: document.getElementById('regPassword').value
     });
     pendingVerificationEmail = email;
