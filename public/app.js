@@ -411,30 +411,38 @@ function renderCalendar() {
 
 function showDayDetails(year, month, day) {
   const dOrders = dashboardData.recent_orders.filter(o => { const d = new Date(o.created_at); return d.getDate()===day && d.getMonth()===month && d.getFullYear()===year; });
-  const dPayments = dashboardData.payment_history.filter(p => { const d = new Date(p.created_at); return d.getDate()===day && d.getMonth()===month && d.getFullYear()===year; });
+  const dPayments = dashboardData.payment_history.filter(p => { const d = new Date(p.created_at); return d.getDate()===day && d.getMonth()===month && d.getFullYear()===year && p.payment_type==='debit'; });
 
-  let content = `<h3>Activity for ${day}/${month+1}/${year}</h3>`;
+  let content = `<h3 style="margin-bottom:0.5rem">Activity for ${day}/${month+1}/${year}</h3>`;
   if (dOrders.length > 0) {
-    content += '<h4 style="margin-top:1.5rem;color:var(--text-secondary)">🛍️ Orders Placed</h4><ul style="margin-left:1.5rem;font-size:0.95rem;margin-top:0.5rem">';
+    content += '<h4 style="margin-top:1.5rem;color:var(--text-secondary)">🛍️ Items Bought</h4><ul style="margin-left:1.5rem;font-size:0.95rem;margin-top:0.5rem">';
     dOrders.forEach(o => {
       const isPaid = o.payment_status === 'paid';
+      
       let dateInfo = `<div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem">Ordered: ${new Date(o.created_at).toLocaleDateString('en-IN')}`;
-      if (o.updated_at && o.updated_at !== o.created_at) {
-        dateInfo += ` | Last Updated (Picked/Paid): ${new Date(o.updated_at).toLocaleDateString('en-IN')}`;
+      if (isPaid && o.updated_at && o.updated_at !== o.created_at) {
+        dateInfo += ` • Paid on: ${new Date(o.updated_at).toLocaleDateString('en-IN')}`;
       }
       dateInfo += `</div>`;
       
       content += `<li style="margin-bottom:1rem">
-        <strong>Order #${o.id.slice(-6)}</strong> - ${o.idli_qty} Idli, ${o.dosa_qty} Dosa (₹${o.total_amount}) 
-        <span class="badge ${isPaid?'badge-success':'badge-danger'}" style="margin-left:0.5rem">${isPaid?'Paid':'Unpaid'}</span>
+        <strong>${o.idli_qty} Idli, ${o.dosa_qty} Dosa</strong> (Total: ₹${o.total_amount}) 
+        <span class="badge ${isPaid?'badge-success':'badge-danger'}" style="margin-left:0.5rem">${isPaid?'PAID':'UNPAID'}</span>
         ${dateInfo}
       </li>`;
     });
     content += '</ul>';
   }
+  
   if (dPayments.length > 0) {
-    content += '<h4 style="margin-top:1.5rem;color:var(--text-secondary)">💳 Payments Recorded</h4><ul style="margin-left:1.5rem;font-size:0.95rem;margin-top:0.5rem">';
-    dPayments.forEach(p => content += `<li style="margin-bottom:0.5rem">${p.payment_type==='debit'?'Paid':'Credit added'} <strong>₹${p.amount}</strong> - ${p.description||''}</li>`);
+    content += '<h4 style="margin-top:1.5rem;color:var(--text-secondary)">💰 Money Paid</h4><ul style="margin-left:1.5rem;font-size:0.95rem;margin-top:0.5rem">';
+    dPayments.forEach(p => {
+      // Simplify descriptions if they contain confusing text
+      let desc = p.description || 'Cash payment';
+      if (desc.includes('Razorpay Payment')) desc = 'Online Payment';
+      if (desc.includes('Payment received from')) desc = 'Cash Payment';
+      content += `<li style="margin-bottom:0.5rem"><strong>Paid ₹${p.amount}</strong> - ${desc}</li>`;
+    });
     content += '</ul>';
   }
 
