@@ -441,7 +441,8 @@ function showDayDetails(year, month, day) {
       let desc = p.description || 'Cash payment';
       if (desc.includes('Razorpay Payment')) desc = 'Online Payment';
       if (desc.includes('Payment received from')) desc = 'Cash Payment';
-      content += `<li style="margin-bottom:0.5rem"><strong>Paid ₹${p.amount}</strong> - ${desc}</li>`;
+      let paymentDate = new Date(p.created_at).toLocaleDateString('en-IN');
+      content += `<li style="margin-bottom:0.5rem"><strong>Paid ₹${p.amount}</strong> - ${desc} <span style="font-size:0.8rem;color:var(--text-muted);margin-left:0.3rem">(on ${paymentDate})</span></li>`;
     });
     content += '</ul>';
   }
