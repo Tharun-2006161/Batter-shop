@@ -482,6 +482,15 @@ body::before {
 .cal-badge.paid { background: rgba(46,213,115,0.15); color: var(--success); }
 .cal-badge.credit { background: rgba(255,71,87,0.15); color: var(--danger); }
 
+/* Calendar 2-Column Layout */
+.calendar-layout { display: flex; gap: 2rem; align-items: flex-start; }
+.calendar-left { flex: 2; overflow-x: auto; }
+.calendar-right { flex: 1; min-width: 300px; }
+.day-details-container {
+  background: var(--bg-card); border: 1px solid var(--border-light);
+  border-radius: var(--radius); min-height: 400px; transition: var(--transition);
+}
+
 /* ============================================
    RESPONSIVE
    ============================================ */
@@ -493,6 +502,8 @@ body::before {
   .order-grid { grid-template-columns: 1fr; }
   .payment-options { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
+  .calendar-layout { flex-direction: column; }
+  .calendar-left, .calendar-right { width: 100%; }
   .hero-title { font-size: 2rem; }
   .hero-stats { gap: 1.5rem; }
   .admin-tabs { gap: 0.3rem; }

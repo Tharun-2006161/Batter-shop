@@ -414,11 +414,7 @@ function showDayDetails(year, month, day) {
     content += '</ul>';
   }
 
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-  overlay.innerHTML = `<div class="modal-content"><div class="modal-header"><h3>Daily Details</h3><button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button></div>${content}</div>`;
-  document.body.appendChild(overlay);
+  document.getElementById('dayDetailsView').innerHTML = `<div style="padding:1rem">${content}</div>`;
 }
 
 // Admin tab switching
