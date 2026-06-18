@@ -376,15 +376,26 @@ function renderCalendar() {
     
     let dailyItems = 0;
     let dailyCost = 0;
-    orders.forEach(o => { dailyItems += o.idli_qty + o.dosa_qty; dailyCost += o.total_amount; });
-    if (orders.length > 0) activityHtml += `<span class="cal-badge order">${dailyItems} Items (₹${dailyCost})</span>`;
+    let hasPending = false;
+    orders.forEach(o => { 
+      dailyItems += o.idli_qty + o.dosa_qty; 
+      dailyCost += o.total_amount; 
+      if (o.payment_status !== 'paid') hasPending = true;
+    });
+
+    if (orders.length > 0) {
+      if (hasPending) {
+        activityHtml += `<span class="cal-badge" style="background:rgba(255,71,87,0.15);color:var(--danger)">🔴 ${dailyItems} Items (Unpaid)</span>`;
+      } else {
+        activityHtml += `<span class="cal-badge" style="background:rgba(46,213,115,0.15);color:var(--success)">✅ ${dailyItems} Items (Paid)</span>`;
+      }
+    }
 
     let dailyPaid = 0;
     let dailyCredit = 0;
     payments.forEach(p => { if(p.payment_type==='debit') dailyPaid += p.amount; else dailyCredit += p.amount; });
     
     if (dailyPaid > 0) activityHtml += `<span class="cal-badge paid">Paid ₹${dailyPaid}</span>`;
-    if (dailyCredit > 0 && orders.length === 0) activityHtml += `<span class="cal-badge credit">Credit ₹${dailyCredit}</span>`;
 
     html += `
       <div class="calendar-day ${hasActivity ? 'has-activity' : ''} ${isToday ? 'today' : ''}" 
@@ -404,13 +415,26 @@ function showDayDetails(year, month, day) {
 
   let content = `<h3>Activity for ${day}/${month+1}/${year}</h3>`;
   if (dOrders.length > 0) {
-    content += '<h4 style="margin-top:1rem;color:var(--text-secondary)">Orders</h4><ul style="margin-left:1.5rem;font-size:0.9rem">';
-    dOrders.forEach(o => content += `<li style="margin-bottom:0.5rem">Order #${o.id.slice(-6)} - ${o.idli_qty} Idli, ${o.dosa_qty} Dosa (₹${o.total_amount}) <span class="badge ${o.payment_status==='paid'?'badge-success':'badge-warning'}">${o.payment_status}</span></li>`);
+    content += '<h4 style="margin-top:1.5rem;color:var(--text-secondary)">🛍️ Orders Placed</h4><ul style="margin-left:1.5rem;font-size:0.95rem;margin-top:0.5rem">';
+    dOrders.forEach(o => {
+      const isPaid = o.payment_status === 'paid';
+      let dateInfo = `<div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem">Ordered: ${new Date(o.created_at).toLocaleDateString('en-IN')}`;
+      if (o.updated_at && o.updated_at !== o.created_at) {
+        dateInfo += ` | Last Updated (Picked/Paid): ${new Date(o.updated_at).toLocaleDateString('en-IN')}`;
+      }
+      dateInfo += `</div>`;
+      
+      content += `<li style="margin-bottom:1rem">
+        <strong>Order #${o.id.slice(-6)}</strong> - ${o.idli_qty} Idli, ${o.dosa_qty} Dosa (₹${o.total_amount}) 
+        <span class="badge ${isPaid?'badge-success':'badge-danger'}" style="margin-left:0.5rem">${isPaid?'Paid':'Unpaid'}</span>
+        ${dateInfo}
+      </li>`;
+    });
     content += '</ul>';
   }
   if (dPayments.length > 0) {
-    content += '<h4 style="margin-top:1rem;color:var(--text-secondary)">Payments</h4><ul style="margin-left:1.5rem;font-size:0.9rem">';
-    dPayments.forEach(p => content += `<li style="margin-bottom:0.5rem">${p.payment_type==='debit'?'Paid':'Credit'} ₹${p.amount} - ${p.description||''}</li>`);
+    content += '<h4 style="margin-top:1.5rem;color:var(--text-secondary)">💳 Payments Recorded</h4><ul style="margin-left:1.5rem;font-size:0.95rem;margin-top:0.5rem">';
+    dPayments.forEach(p => content += `<li style="margin-bottom:0.5rem">${p.payment_type==='debit'?'Paid':'Credit added'} <strong>₹${p.amount}</strong> - ${p.description||''}</li>`);
     content += '</ul>';
   }
 
