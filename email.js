@@ -112,4 +112,34 @@ async function sendPasswordResetEmail(email, token, host) {
   }
 }
 
-module.exports = { sendOrderNotification, sendPasswordResetEmail };
+// Send registration OTP
+async function sendRegistrationOTP(email, otp) {
+  try {
+    const transport = getTransporter();
+    
+    const mailOptions = {
+      from: `"Batter Shop" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: `🔐 Verify your Batter Shop account`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px;">
+          <h2 style="color: #6C63FF;">Welcome to Batter Shop!</h2>
+          <p>Please use the following 6-digit OTP to complete your registration:</p>
+          <div style="background: #f4f4f5; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
+            <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #1a1a2e;">${otp}</span>
+          </div>
+          <p style="color: #666; font-size: 14px;">This OTP is valid for 10 minutes.</p>
+        </div>
+      `
+    };
+
+    await transport.sendMail(mailOptions);
+    console.log(`✉️  OTP sent to ${email}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to send OTP email:', error.message);
+    return false;
+  }
+}
+
+module.exports = { sendOrderNotification, sendPasswordResetEmail, sendRegistrationOTP };

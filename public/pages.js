@@ -71,6 +71,17 @@ const Pages = {
     </div></div>`;
   },
 
+  verifyOtp() {
+    return `<div class="auth-page"><div class="auth-card fade-in">
+      <div class="auth-header"><span class="auth-icon">🔐</span><h2 class="auth-title">Verify Email</h2><p class="auth-subtitle">We sent a 6-digit code to your email</p></div>
+      <form onsubmit="handleVerifyOTP(event)">
+        <div class="form-group"><label class="form-label">Enter OTP Code</label><input class="form-input" type="text" id="verifyOtpInput" required minlength="6" maxlength="6" placeholder="123456" style="text-align:center; font-size:1.5rem; letter-spacing:5px;"></div>
+        <button class="btn btn-primary btn-block btn-lg" type="submit">Verify & Login</button>
+      </form>
+      <p class="auth-footer"><span class="auth-link" onclick="navigateTo('register')">← Back to Register</span></p>
+    </div></div>`;
+  },
+
   adminLogin() {
     return `<div class="auth-page"><div class="auth-card fade-in">
       <div class="auth-header"><span class="auth-icon">🛡️</span><h2 class="auth-title">Admin Login</h2><p class="auth-subtitle">Access the management panel</p></div>

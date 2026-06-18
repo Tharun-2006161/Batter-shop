@@ -3,6 +3,7 @@ let orderState = { idli: 0, dosa: 0, idliPrice: 25, dosaPrice: 25, paymentMethod
 let currentPage = 'home';
 let currentCalendarDate = new Date();
 let dashboardData = null;
+let pendingVerificationEmail = null;
 
 function toast(msg, type = 'info') {
   const c = document.getElementById('toastContainer');
@@ -43,6 +44,7 @@ function render() {
     case 'admin-login': html = Pages.adminLogin(); break;
     case 'forgot-password': html = Pages.forgotPassword(); break;
     case 'reset-password': html = Pages.resetPassword(); break;
+    case 'verify-otp': html = Pages.verifyOtp(); break;
     case 'order':
       if (!user) return navigateTo('login');
       html = Pages.order(); break;
@@ -68,29 +70,53 @@ function render() {
 async function handleLogin(e) {
   e.preventDefault();
   try {
+    const email = document.getElementById('loginEmail').value;
     const data = await API.post('/auth/login', {
-      email: document.getElementById('loginEmail').value,
+      email,
       password: document.getElementById('loginPassword').value
     });
     API.setToken(data.token);
     API.setUser(data.user);
     toast('Welcome back, ' + data.user.name + '!', 'success');
     navigateTo(data.user.role === 'admin' ? 'admin' : 'order');
-  } catch (err) { toast(err.message, 'error'); }
+  } catch (err) { 
+    if (err.message.includes('verify your email')) {
+      pendingVerificationEmail = document.getElementById('loginEmail').value;
+      toast(err.message, 'warning');
+      navigateTo('verify-otp');
+    } else {
+      toast(err.message, 'error'); 
+    }
+  }
 }
 
 async function handleRegister(e) {
   e.preventDefault();
   try {
+    const email = document.getElementById('regEmail').value;
     const data = await API.post('/auth/register', {
       name: document.getElementById('regName').value,
-      email: document.getElementById('regEmail').value,
+      email,
       phone: document.getElementById('regPhone').value,
       password: document.getElementById('regPassword').value
     });
+    pendingVerificationEmail = email;
+    toast(data.message || 'OTP sent! Please check your email.', 'success');
+    navigateTo('verify-otp');
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function handleVerifyOTP(e) {
+  e.preventDefault();
+  try {
+    if (!pendingVerificationEmail) throw new Error("Email not found. Please try registering or logging in again.");
+    const data = await API.post('/auth/verify-otp', {
+      email: pendingVerificationEmail,
+      otp: document.getElementById('verifyOtpInput').value
+    });
     API.setToken(data.token);
     API.setUser(data.user);
-    toast('Account created! Welcome!', 'success');
+    toast('Email verified successfully! Welcome!', 'success');
     navigateTo('order');
   } catch (err) { toast(err.message, 'error'); }
 }
