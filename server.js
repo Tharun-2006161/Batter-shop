@@ -28,7 +28,7 @@ async function start() {
   app.listen(PORT, () => {
     console.log(`\n🍚 Batter Shop Server running on http://localhost:${PORT}`);
     console.log(`📋 Admin panel: http://localhost:${PORT}/#admin-login`);
-    console.log(`🕐 Booking hours: 9:00 PM - 1:30 PM\n`);
+    console.log(`🕐 Booking hours: 8:00 PM - 2:00 PM\n`);
   });
 }
 

@@ -25,29 +25,29 @@ function isAdmin(req, res, next) {
   next();
 }
 
-// Check if booking is open (9 PM to next day 1:30 PM)
+// Check if booking is open (8 PM to next day 2:00 PM)
 function isBookingOpen(req, res, next) {
   const now = new Date();
   const hours = now.getHours();
   const minutes = now.getMinutes();
   const currentTime = hours * 60 + minutes; // Convert to minutes
 
-  // Booking window: 21:00 (9 PM) to next day 13:30 (1:30 PM)
-  // In minutes: 21*60=1260 to 13*60+30=810 (next day)
-  const openTime = 21 * 60;      // 9:00 PM = 1260 minutes
-  const closeTime = 13 * 60 + 30; // 1:30 PM = 810 minutes
+  // Booking window: 20:00 (8 PM) to next day 14:00 (2:00 PM)
+  // In minutes: 20*60=1200 to 14*60=840 (next day)
+  const openTime = 20 * 60;      // 8:00 PM = 1200 minutes
+  const closeTime = 14 * 60;     // 2:00 PM = 840 minutes
 
   // Booking is open if:
-  // - Current time >= 9:00 PM (1260+) OR
-  // - Current time <= 1:30 PM (0-810)
+  // - Current time >= 8:00 PM (1200+) OR
+  // - Current time <= 2:00 PM (0-840)
   const isOpen = currentTime >= openTime || currentTime <= closeTime;
 
   if (!isOpen) {
     return res.status(403).json({
       error: 'Booking is closed.',
-      message: 'Orders are accepted only between 9:00 PM and 1:30 PM next day.',
+      message: 'Orders are accepted only between 8:00 PM and 2:00 PM next day.',
       currentTime: `${hours}:${minutes.toString().padStart(2, '0')}`,
-      bookingWindow: '9:00 PM - 1:30 PM'
+      bookingWindow: '8:00 PM - 2:00 PM'
     });
   }
   next();

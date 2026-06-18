@@ -2,7 +2,7 @@
 const Pages = {
   home() {
     return `<section class="hero"><div class="hero-content">
-      <div class="hero-badge">🕐 Orders open 9 PM – 1:30 PM</div>
+      <div class="hero-badge">🕐 Orders open 8 PM – 2:00 PM</div>
       <h1 class="hero-title">Fresh <span class="highlight">Idli & Dosa</span> Batter</h1>
       <p class="hero-subtitle">Order premium quality batter online. Pay now or later — we've got you covered.</p>
       <div class="hero-actions">
