@@ -78,4 +78,38 @@ async function sendOrderNotification(order, customer) {
   }
 }
 
-module.exports = { sendOrderNotification };
+// Send password reset email
+async function sendPasswordResetEmail(email, token, host) {
+  try {
+    const transport = getTransporter();
+    const resetUrl = `http://${host}/#reset-password?token=${token}`;
+    
+    const mailOptions = {
+      from: `"Batter Shop" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: `🔒 Password Reset Request`,
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa; border-radius: 12px; overflow: hidden;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">Password Reset</h1>
+          </div>
+          <div style="padding: 30px; text-align: center;">
+            <p style="color: #555; font-size: 16px;">You are receiving this because you (or someone else) have requested the reset of the password for your account.</p>
+            <p style="color: #555; font-size: 16px;">Please click on the following button, or paste this into your browser to complete the process:</p>
+            <a href="${resetUrl}" style="display: inline-block; margin: 20px 0; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Reset Password</a>
+            <p style="color: #999; font-size: 14px;">If you did not request this, please ignore this email and your password will remain unchanged.</p>
+          </div>
+        </div>
+      `
+    };
+
+    await transport.sendMail(mailOptions);
+    console.log(`✉️  Password reset email sent to ${email}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to send reset email:', error.message);
+    return false;
+  }
+}
+
+module.exports = { sendOrderNotification, sendPasswordResetEmail };

@@ -39,6 +39,8 @@ function render() {
     case 'login': html = Pages.login(); break;
     case 'register': html = Pages.register(); break;
     case 'admin-login': html = Pages.adminLogin(); break;
+    case 'forgot-password': html = Pages.forgotPassword(); break;
+    case 'reset-password': html = Pages.resetPassword(); break;
     case 'order':
       if (!user) return navigateTo('login');
       html = Pages.order(); break;
@@ -110,6 +112,38 @@ function logout() {
   API.clearToken();
   toast('Logged out', 'info');
   navigateTo('home');
+}
+
+async function handleForgotPassword(e) {
+  e.preventDefault();
+  try {
+    const data = await API.post('/auth/forgot-password', {
+      email: document.getElementById('forgotEmail').value
+    });
+    toast(data.message, 'success');
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function handleResetPassword(e) {
+  e.preventDefault();
+  try {
+    // Extract token from URL
+    const hashParts = window.location.hash.split('?');
+    let token = '';
+    if (hashParts.length > 1) {
+      const urlParams = new URLSearchParams(hashParts[1]);
+      token = urlParams.get('token');
+    }
+    
+    if (!token) throw new Error('Invalid or missing reset token.');
+
+    const data = await API.post('/auth/reset-password', {
+      token: token,
+      password: document.getElementById('resetPassword').value
+    });
+    toast(data.message, 'success');
+    navigateTo('login');
+  } catch (err) { toast(err.message, 'error'); }
 }
 
 // Order page
@@ -354,13 +388,13 @@ async function updatePrices() {
 
 // Router
 window.addEventListener('hashchange', () => {
-  currentPage = window.location.hash.slice(1) || 'home';
+  currentPage = window.location.hash.slice(1).split('?')[0] || 'home';
   render();
 });
 
 // Init
 (function init() {
-  currentPage = window.location.hash.slice(1) || 'home';
+  currentPage = window.location.hash.slice(1).split('?')[0] || 'home';
   const user = API.getUser();
   if (user && currentPage === 'home') {
     currentPage = user.role === 'admin' ? 'admin' : 'order';

@@ -21,11 +21,39 @@ const Pages = {
       <div class="auth-header"><span class="auth-icon">🔐</span><h2 class="auth-title">Welcome Back</h2><p class="auth-subtitle">Login to your account</p></div>
       <form onsubmit="handleLogin(event)">
         <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="loginEmail" required placeholder="you@example.com"></div>
-        <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="loginPassword" required placeholder="••••••••"></div>
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between;">
+            <label class="form-label">Password</label>
+            <span class="auth-link" style="font-size:12px; margin-bottom:5px;" onclick="navigateTo('forgot-password')">Forgot password?</span>
+          </div>
+          <input class="form-input" type="password" id="loginPassword" required placeholder="••••••••">
+        </div>
         <button class="btn btn-primary btn-block btn-lg" type="submit">Login</button>
       </form>
       <p class="auth-footer">Don't have an account? <span class="auth-link" onclick="navigateTo('register')">Register here</span></p>
       <p class="auth-footer" style="margin-top:0.5rem"><span class="auth-link" onclick="navigateTo('admin-login')">Admin Login →</span></p>
+    </div></div>`;
+  },
+
+  forgotPassword() {
+    return `<div class="auth-page"><div class="auth-card fade-in">
+      <div class="auth-header"><span class="auth-icon">🔑</span><h2 class="auth-title">Forgot Password</h2><p class="auth-subtitle">Enter your email to reset</p></div>
+      <form onsubmit="handleForgotPassword(event)">
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="forgotEmail" required placeholder="you@example.com"></div>
+        <button class="btn btn-primary btn-block btn-lg" type="submit">Send Reset Link</button>
+      </form>
+      <p class="auth-footer"><span class="auth-link" onclick="navigateTo('login')">← Back to Login</span></p>
+    </div></div>`;
+  },
+
+  resetPassword() {
+    return `<div class="auth-page"><div class="auth-card fade-in">
+      <div class="auth-header"><span class="auth-icon">🔒</span><h2 class="auth-title">Reset Password</h2><p class="auth-subtitle">Create a new password</p></div>
+      <form onsubmit="handleResetPassword(event)">
+        <div class="form-group"><label class="form-label">New Password</label><input class="form-input" type="password" id="resetPassword" required minlength="6" placeholder="Min 6 characters"></div>
+        <button class="btn btn-primary btn-block btn-lg" type="submit">Update Password</button>
+      </form>
+      <p class="auth-footer"><span class="auth-link" onclick="navigateTo('login')">← Back to Login</span></p>
     </div></div>`;
   },
 
