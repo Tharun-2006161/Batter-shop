@@ -31,7 +31,7 @@ function renderAdminOrders(orders) {
     <td>#${o.id}</td><td>${o.customer_name}</td><td>${o.customer_phone}</td>
     <td>${o.idli_qty} idli, ${o.dosa_qty} dosa</td><td>₹${o.total_amount}</td>
     <td><span class="badge ${o.payment_status==='paid'?'badge-success':'badge-warning'}">${o.payment_status}</span></td>
-    <td><select onchange="updateOrderStatus(${o.id},this.value)" style="background:var(--bg-dark);color:var(--text-primary);border:1px solid var(--border-light);border-radius:6px;padding:4px 8px;font-size:0.8rem">
+    <td><select onchange="updateOrderStatus('${o.id}',this.value)" style="background:var(--bg-dark);color:var(--text-primary);border:1px solid var(--border-light);border-radius:6px;padding:4px 8px;font-size:0.8rem">
       ${['confirmed','preparing','ready','collected','cancelled'].map(s=>`<option value="${s}" ${o.order_status===s?'selected':''}>${s}</option>`).join('')}
     </select></td>
     <td>${new Date(o.created_at).toLocaleDateString('en-IN')}</td>
@@ -44,7 +44,7 @@ function renderAdminCustomers(customers) {
   let rows = customers.map(c => `<tr>
     <td>${c.name}</td><td>${c.email}</td><td>${c.phone}</td><td>${c.order_count}</td>
     <td><span class="badge ${c.pending_balance>0?'badge-danger':'badge-success'}">₹${c.pending_balance}</span></td>
-    <td><button class="btn btn-sm btn-primary" onclick="showPaymentModal(${c.id},'${c.name}',${c.pending_balance})">Record Payment</button></td>
+    <td><button class="btn btn-sm btn-primary" onclick="showPaymentModal('${c.id}','${c.name}',${c.pending_balance})">Record Payment</button></td>
   </tr>`).join('');
   return `<div class="table-wrapper"><table class="data-table"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Orders</th><th>Pending</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }

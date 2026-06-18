@@ -358,7 +358,7 @@ function showPaymentModal(userId, name, pending) {
     <p style="color:var(--text-secondary);margin-bottom:1rem">Pending: <strong style="color:var(--danger)">₹${pending}</strong></p>
     <div class="form-group"><label class="form-label">Amount (₹)</label><input class="form-input" type="number" id="payAmount" value="${pending}" min="1" max="${pending}"></div>
     <div class="form-group"><label class="form-label">Description</label><input class="form-input" type="text" id="payDesc" placeholder="e.g. Cash payment"></div>
-    <button class="btn btn-success btn-block" onclick="recordPayment(${userId})">Record Payment</button>
+    <button class="btn btn-success btn-block" onclick="recordPayment('${userId}')">Record Payment</button>
   </div>`;
   document.body.appendChild(overlay);
 }
