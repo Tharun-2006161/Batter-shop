@@ -1,6 +1,8 @@
 // Main Application Logic
 let orderState = { idli: 0, dosa: 0, idliPrice: 25, dosaPrice: 25, paymentMethod: null };
 let currentPage = 'home';
+let currentCalendarDate = new Date();
+let dashboardData = null;
 
 function toast(msg, type = 'info') {
   const c = document.getElementById('toastContainer');
@@ -288,6 +290,7 @@ async function handleRazorpayPayment() {
 async function loadDashboard() {
   try {
     const data = await API.get('/orders/dashboard');
+    dashboardData = data;
     const s = data.summary;
     document.getElementById('dashStats').innerHTML = `
       <div class="stat-card primary"><div class="stat-icon">📦</div><div class="stat-value">${s.total_orders}</div><div class="stat-label">Total Orders</div></div>
@@ -312,7 +315,110 @@ async function loadDashboard() {
     } else {
       document.getElementById('dashPayments').innerHTML = '<div class="empty-state"><span class="empty-icon">💳</span><p class="empty-text">No payment history</p></div>';
     }
+
+    renderCalendar();
   } catch (err) { toast(err.message, 'error'); }
+}
+
+function changeMonth(delta) {
+  currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta);
+  renderCalendar();
+}
+
+function renderCalendar() {
+  if (!dashboardData) return;
+  const year = currentCalendarDate.getFullYear();
+  const month = currentCalendarDate.getMonth();
+  document.getElementById('calendarMonthLabel').textContent = new Date(year, month, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+
+  const firstDay = new Date(year, month, 1).getDay(); // 0 is Sunday
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+  const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+
+  // Group data by day
+  const ordersByDay = {};
+  const paymentsByDay = {};
+  
+  dashboardData.recent_orders.forEach(o => {
+    const d = new Date(o.created_at);
+    if (d.getMonth() === month && d.getFullYear() === year) {
+      const date = d.getDate();
+      if (!ordersByDay[date]) ordersByDay[date] = [];
+      ordersByDay[date].push(o);
+    }
+  });
+
+  dashboardData.payment_history.forEach(p => {
+    const d = new Date(p.created_at);
+    if (d.getMonth() === month && d.getFullYear() === year) {
+      const date = d.getDate();
+      if (!paymentsByDay[date]) paymentsByDay[date] = [];
+      paymentsByDay[date].push(p);
+    }
+  });
+
+  let html = '<div class="calendar-grid">';
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  days.forEach(d => html += `<div class="calendar-day-header">${d}</div>`);
+
+  for (let i = 0; i < firstDay; i++) {
+    html += '<div class="calendar-day empty"></div>';
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const orders = ordersByDay[d] || [];
+    const payments = paymentsByDay[d] || [];
+    const isToday = isCurrentMonth && today.getDate() === d;
+    const hasActivity = orders.length > 0 || payments.length > 0;
+    
+    let activityHtml = '';
+    
+    let dailyItems = 0;
+    let dailyCost = 0;
+    orders.forEach(o => { dailyItems += o.idli_qty + o.dosa_qty; dailyCost += o.total_amount; });
+    if (orders.length > 0) activityHtml += `<span class="cal-badge order">${dailyItems} Items (₹${dailyCost})</span>`;
+
+    let dailyPaid = 0;
+    let dailyCredit = 0;
+    payments.forEach(p => { if(p.payment_type==='debit') dailyPaid += p.amount; else dailyCredit += p.amount; });
+    
+    if (dailyPaid > 0) activityHtml += `<span class="cal-badge paid">Paid ₹${dailyPaid}</span>`;
+    if (dailyCredit > 0 && orders.length === 0) activityHtml += `<span class="cal-badge credit">Credit ₹${dailyCredit}</span>`;
+
+    html += `
+      <div class="calendar-day ${hasActivity ? 'has-activity' : ''} ${isToday ? 'today' : ''}" 
+           ${hasActivity ? `onclick="showDayDetails(${year}, ${month}, ${d})"` : ''}>
+        <div class="calendar-date">${d}</div>
+        ${activityHtml}
+      </div>
+    `;
+  }
+  html += '</div>';
+  document.getElementById('calendarView').innerHTML = html;
+}
+
+function showDayDetails(year, month, day) {
+  const dOrders = dashboardData.recent_orders.filter(o => { const d = new Date(o.created_at); return d.getDate()===day && d.getMonth()===month && d.getFullYear()===year; });
+  const dPayments = dashboardData.payment_history.filter(p => { const d = new Date(p.created_at); return d.getDate()===day && d.getMonth()===month && d.getFullYear()===year; });
+
+  let content = `<h3>Activity for ${day}/${month+1}/${year}</h3>`;
+  if (dOrders.length > 0) {
+    content += '<h4 style="margin-top:1rem;color:var(--text-secondary)">Orders</h4><ul style="margin-left:1.5rem;font-size:0.9rem">';
+    dOrders.forEach(o => content += `<li style="margin-bottom:0.5rem">Order #${o.id.slice(-6)} - ${o.idli_qty} Idli, ${o.dosa_qty} Dosa (₹${o.total_amount}) <span class="badge ${o.payment_status==='paid'?'badge-success':'badge-warning'}">${o.payment_status}</span></li>`);
+    content += '</ul>';
+  }
+  if (dPayments.length > 0) {
+    content += '<h4 style="margin-top:1rem;color:var(--text-secondary)">Payments</h4><ul style="margin-left:1.5rem;font-size:0.9rem">';
+    dPayments.forEach(p => content += `<li style="margin-bottom:0.5rem">${p.payment_type==='debit'?'Paid':'Credit'} ₹${p.amount} - ${p.description||''}</li>`);
+    content += '</ul>';
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `<div class="modal-content"><div class="modal-header"><h3>Daily Details</h3><button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button></div>${content}</div>`;
+  document.body.appendChild(overlay);
 }
 
 // Admin tab switching

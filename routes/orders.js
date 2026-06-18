@@ -208,8 +208,8 @@ router.get('/dashboard', authenticate, async (req, res) => {
     const totalCredit = creditAgg.length ? creditAgg[0].total : 0;
 
     const pending = totalCredit - totalPaid;
-    const recentOrders = await Order.find({ user_id: uid }).sort({ createdAt: -1 }).limit(10);
-    const paymentHistory = await Payment.find({ user_id: uid }).sort({ createdAt: -1 }).limit(20).populate('order_id', 'idli_qty dosa_qty');
+    const recentOrders = await Order.find({ user_id: uid }).sort({ createdAt: -1 });
+    const paymentHistory = await Payment.find({ user_id: uid }).sort({ createdAt: -1 });
 
     res.json({
       summary: { total_orders: totalOrders, total_spent: totalSpent, total_paid: totalPaid, pending_balance: Math.max(0, pending), outstanding_amount: Math.max(0, pending) },

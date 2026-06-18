@@ -452,6 +452,37 @@ body::before {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ============================================
+   CALENDAR
+   ============================================ */
+.calendar-container {
+  background: var(--bg-card); border: 1px solid var(--border-light);
+  border-radius: var(--radius); padding: 1.5rem; overflow-x: auto;
+}
+.calendar-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;
+  min-width: 600px;
+}
+.calendar-day-header {
+  text-align: center; font-weight: 600; color: var(--text-muted);
+  font-size: 0.85rem; text-transform: uppercase; padding-bottom: 0.5rem;
+}
+.calendar-day {
+  background: var(--bg-dark); border: 1px solid var(--border-light);
+  border-radius: 8px; padding: 0.5rem; min-height: 80px;
+  display: flex; flex-direction: column; cursor: pointer; transition: var(--transition);
+}
+.calendar-day:hover { border-color: var(--primary); transform: translateY(-2px); }
+.calendar-day.empty { background: transparent; border: none; cursor: default; }
+.calendar-day.empty:hover { transform: none; }
+.calendar-date { font-weight: 700; color: var(--text-secondary); margin-bottom: 0.3rem; }
+.calendar-day.has-activity .calendar-date { color: var(--text-primary); }
+.calendar-day.today { border: 2px solid var(--primary); }
+.cal-badge { font-size: 0.7rem; padding: 2px 5px; border-radius: 4px; margin-bottom: 3px; font-weight: 600; display: inline-block; }
+.cal-badge.order { background: rgba(108,99,255,0.15); color: var(--primary-light); }
+.cal-badge.paid { background: rgba(46,213,115,0.15); color: var(--success); }
+.cal-badge.credit { background: rgba(255,71,87,0.15); color: var(--danger); }
+
+/* ============================================
    RESPONSIVE
    ============================================ */
 @media (max-width: 768px) {

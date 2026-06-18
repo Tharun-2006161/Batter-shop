@@ -28,7 +28,17 @@ Pages.dashboard = function() {
   return `<div class="page fade-in">
     <div class="page-header"><h1 class="page-title">📊 My Dashboard</h1><p class="page-subtitle">Your orders and payment summary</p></div>
     <div class="stats-grid" id="dashStats"><div class="spinner"></div></div>
-    <div class="section-header"><h3 class="section-title">Recent Orders</h3></div>
+    <div class="section-header" style="margin-top:2rem">
+      <h3 class="section-title">📅 My Monthly Calendar</h3>
+      <div style="display:flex;gap:1rem;align-items:center;">
+        <button class="btn btn-sm btn-outline" onclick="changeMonth(-1)">← Prev</button>
+        <span id="calendarMonthLabel" style="font-weight:bold;font-size:1.1rem"></span>
+        <button class="btn btn-sm btn-outline" onclick="changeMonth(1)">Next →</button>
+      </div>
+    </div>
+    <div id="calendarView" class="calendar-container"><div class="spinner"></div></div>
+
+    <div class="section-header" style="margin-top:2rem"><h3 class="section-title">Recent Orders</h3></div>
     <div class="table-wrapper" id="dashOrders"><div class="spinner"></div></div>
     <div class="section-header" style="margin-top:2rem"><h3 class="section-title">Payment History</h3></div>
     <div class="table-wrapper" id="dashPayments"><div class="spinner"></div></div>
