@@ -27,9 +27,13 @@ function isAdmin(req, res, next) {
 
 // Check if booking is open (8 PM to next day 2:00 PM)
 function isBookingOpen(req, res, next) {
+  // Get current time in Indian Standard Time (IST)
   const now = new Date();
-  const hours = now.getHours();
-  const minutes = now.getMinutes();
+  const istString = now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"});
+  const istDate = new Date(istString);
+  
+  const hours = istDate.getHours();
+  const minutes = istDate.getMinutes();
   const currentTime = hours * 60 + minutes; // Convert to minutes
 
   // Booking window: 20:00 (8 PM) to next day 14:00 (2:00 PM)

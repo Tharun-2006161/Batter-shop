@@ -51,7 +51,9 @@ router.get('/razorpay-key', (req, res) => {
 // Check booking status
 router.get('/booking-status', (req, res) => {
   const now = new Date();
-  const h = now.getHours(), m = now.getMinutes();
+  const istString = now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"});
+  const istDate = new Date(istString);
+  const h = istDate.getHours(), m = istDate.getMinutes();
   const t = h * 60 + m;
   const isOpen = t >= 20 * 60 || t <= 14 * 60;
   res.json({ isOpen, currentTime: `${h}:${String(m).padStart(2,'0')}`, bookingWindow: '8:00 PM - 2:00 PM',
