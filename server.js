@@ -22,6 +22,47 @@ async function start() {
   app.use('/api/orders', orderRoutes);
   app.use('/api/admin', adminRoutes);
 
+  // --- DEBUG ROUTE FOR RENDER EMAIL TESTING ---
+  app.get('/test-email', async (req, res) => {
+    try {
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT) || 587,
+        secure: false,
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        }
+      });
+
+      await transporter.verify();
+      
+      const info = await transporter.sendMail({
+        from: `"Batter Shop" <${process.env.SMTP_USER}>`,
+        to: process.env.SMTP_USER,
+        subject: 'Render Email Test',
+        text: 'Email works on Render!'
+      });
+
+      res.json({ 
+        success: true, 
+        message: 'Email sent successfully!', 
+        user: process.env.SMTP_USER,
+        messageId: info.messageId 
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        error: error.message, 
+        stack: error.stack,
+        userProvided: process.env.SMTP_USER ? 'Yes' : 'No',
+        passProvided: process.env.SMTP_PASS ? 'Yes' : 'No'
+      });
+    }
+  });
+  // ------------------------------------------
+
   app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
   const PORT = process.env.PORT || 3000;
