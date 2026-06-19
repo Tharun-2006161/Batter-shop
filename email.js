@@ -1,21 +1,45 @@
 const nodemailer = require('nodemailer');
 
-// Create transporter
-let transporter = null;
+// Create a fresh transporter each time to avoid stale connections on cloud platforms
+function createTransporter(port = 465) {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: port,
+    secure: port === 465,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    },
+    connectionTimeout: 10000, // 10 seconds to connect
+    greetingTimeout: 10000,   // 10 seconds for greeting
+    socketTimeout: 15000,     // 15 seconds for socket
+  });
+}
+
+// Send email with retry logic - tries port 465 first, then 587
+async function sendMailWithRetry(mailOptions, maxRetries = 3) {
+  const ports = [465, 587];
+  let lastError = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const port = ports[attempt % ports.length];
+    try {
+      console.log(`📧 Email attempt ${attempt + 1}/${maxRetries} via port ${port}...`);
+      const transport = createTransporter(port);
+      const info = await transport.sendMail(mailOptions);
+      console.log(`✉️  Email sent successfully via port ${port}: ${info.messageId}`);
+      transport.close();
+      return info;
+    } catch (error) {
+      lastError = error;
+      console.error(`❌ Attempt ${attempt + 1} failed (port ${port}): ${error.message}`);
+    }
+  }
+  throw lastError;
+}
 
 function getTransporter() {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: 465,
-      secure: true, // Use port 465 (SMTPS) which works better on some cloud platforms
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
-  }
-  return transporter;
+  return createTransporter(465);
 }
 
 // Send order notification email to admin
@@ -115,8 +139,6 @@ async function sendPasswordResetEmail(email, token, host) {
 // Send registration OTP
 async function sendRegistrationOTP(email, otp) {
   try {
-    const transport = getTransporter();
-    
     const mailOptions = {
       from: `"Batter Shop" <${process.env.SMTP_USER}>`,
       to: email,
@@ -133,11 +155,10 @@ async function sendRegistrationOTP(email, otp) {
       `
     };
 
-    await transport.sendMail(mailOptions);
-    console.log(`✉️  OTP sent to ${email}`);
+    await sendMailWithRetry(mailOptions);
     return true;
   } catch (error) {
-    console.error('❌ Failed to send OTP email:', error.message);
+    console.error('❌ Failed to send OTP email after all retries:', error.message);
     return false;
   }
 }
