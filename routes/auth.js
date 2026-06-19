@@ -19,6 +19,11 @@ router.post('/register', async (req, res) => {
     // Generate 6 digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    
+    // Log OTP for local testing when email is not configured
+    console.log(`\n============================`);
+    console.log(`🔑 DEV ONLY - OTP for ${email}: ${otp}`);
+    console.log(`============================\n`);
 
     if (user) {
       if (user.is_verified || !user.verification_otp) {
@@ -32,12 +37,14 @@ router.post('/register', async (req, res) => {
     } else {
       const hashed = bcrypt.hashSync(password, 10);
       user = await User.create({ 
-        name, email, phone, password: hashed, role: 'customer', 
+        name, email, password: hashed, role: 'customer', 
         is_verified: false, verification_otp: otp, otp_expires: otpExpires 
       });
     }
 
-    await sendRegistrationOTP(email, otp);
+    // Send OTP email in the background so the user doesn't have to wait
+    sendRegistrationOTP(email, otp).catch(err => console.error("Background email error:", err));
+    
     res.status(200).json({ message: 'OTP sent to your email. Please verify to complete registration.', email });
   } catch (error) {
     console.error('Registration error:', error);
