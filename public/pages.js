@@ -63,6 +63,7 @@ const Pages = {
       <form onsubmit="handleRegister(event)">
         <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" type="text" id="regName" required placeholder="Your name"></div>
         <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="regEmail" required placeholder="you@example.com"></div>
+        <div class="form-group"><label class="form-label">Phone Number</label><input class="form-input" type="tel" id="regPhone" required placeholder="9876543210" pattern="[0-9]{10}" title="Enter a 10-digit phone number"></div>
         <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="regPassword" required minlength="6" placeholder="Min 6 characters"></div>
         <button class="btn btn-primary btn-block btn-lg" type="submit">Register</button>
       </form>

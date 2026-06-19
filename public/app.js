@@ -93,15 +93,16 @@ async function handleLogin(e) {
 async function handleRegister(e) {
   e.preventDefault();
   try {
-    const email = document.getElementById('regEmail').value;
     const data = await API.post('/auth/register', {
       name: document.getElementById('regName').value,
-      email,
+      email: document.getElementById('regEmail').value,
+      phone: document.getElementById('regPhone').value,
       password: document.getElementById('regPassword').value
     });
-    pendingVerificationEmail = email;
-    toast(data.message || 'OTP sent! Please check your email.', 'success');
-    navigateTo('verify-otp');
+    API.setToken(data.token);
+    API.setUser(data.user);
+    toast('Registration successful! Welcome, ' + data.user.name + '!', 'success');
+    navigateTo('order');
   } catch (err) { toast(err.message, 'error'); }
 }
 
