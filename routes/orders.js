@@ -252,7 +252,7 @@ router.post('/pay-pending', authenticate, async (req, res) => {
     const rzpOrder = await rzp.orders.create({
       amount: Math.round(payAmount * 100),
       currency: 'INR',
-      receipt: `pending_${uid}_${Date.now()}`,
+      receipt: `pend_${uid.slice(-8)}_${Date.now()}`,
       notes: { user_id: uid, type: 'pending_balance_payment', amount: String(payAmount) }
     });
 
