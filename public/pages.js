@@ -65,20 +65,39 @@ const Pages = {
         <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="regEmail" required placeholder="you@example.com"></div>
         <div class="form-group"><label class="form-label">Phone Number</label><input class="form-input" type="tel" id="regPhone" required placeholder="9876543210" pattern="[0-9]{10}" title="Enter a 10-digit phone number"></div>
         <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="regPassword" required minlength="6" placeholder="Min 6 characters"></div>
-        <button class="btn btn-primary btn-block btn-lg" type="submit">Register</button>
+        <button class="btn btn-primary btn-block btn-lg" type="submit" id="registerBtn">Register</button>
       </form>
       <p class="auth-footer">Already have an account? <span class="auth-link" onclick="navigateTo('login')">Login here</span></p>
     </div></div>`;
   },
 
-  verifyOtp() {
-    return `<div class="auth-page"><div class="auth-card fade-in">
-      <div class="auth-header"><span class="auth-icon">🔐</span><h2 class="auth-title">Verify Email</h2><p class="auth-subtitle">We sent a 6-digit code to your email</p></div>
-      <form onsubmit="handleVerifyOTP(event)">
-        <div class="form-group"><label class="form-label">Enter OTP Code</label><input class="form-input" type="text" id="verifyOtpInput" required minlength="6" maxlength="6" placeholder="123456" style="text-align:center; font-size:1.5rem; letter-spacing:5px;"></div>
-        <button class="btn btn-primary btn-block btn-lg" type="submit">Verify & Login</button>
-      </form>
-      <p class="auth-footer"><span class="auth-link" onclick="navigateTo('register')">← Back to Register</span></p>
+  // "Check your email" page shown after registration
+  checkEmail() {
+    const email = pendingVerificationEmail || 'your email';
+    return `<div class="auth-page"><div class="auth-card fade-in" style="max-width: 500px;">
+      <div class="auth-header">
+        <span class="auth-icon" style="font-size: 56px;">📨</span>
+        <h2 class="auth-title">Check Your Email</h2>
+        <p class="auth-subtitle">We've sent a confirmation link</p>
+      </div>
+      <div style="background: rgba(102,126,234,0.08); border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid rgba(102,126,234,0.15);">
+        <p style="color: var(--text-secondary); font-size: 15px; line-height: 1.7; margin: 0;">
+          A confirmation email has been sent to<br>
+          <strong style="color: var(--primary); font-size: 16px;">${email}</strong><br><br>
+          Click the link in the email to verify your account. Once verified, you can log in and start ordering!
+        </p>
+      </div>
+      <div style="margin-top: 16px;">
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">
+          📌 Didn't receive it? Check your spam folder or click below to resend.
+        </p>
+        <button class="btn btn-outline btn-block" onclick="resendConfirmation()" id="resendBtn">
+          🔄 Resend Confirmation Email
+        </button>
+      </div>
+      <p class="auth-footer" style="margin-top: 24px;">
+        Already verified? <span class="auth-link" onclick="navigateTo('login')">Login here →</span>
+      </p>
     </div></div>`;
   },
 

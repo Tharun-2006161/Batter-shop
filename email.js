@@ -136,31 +136,53 @@ async function sendPasswordResetEmail(email, token, host) {
   }
 }
 
-// Send registration OTP
-async function sendRegistrationOTP(email, otp) {
+// Send email confirmation link for registration
+async function sendConfirmationEmail(email, token, host) {
   try {
+    // Use the protocol from the request, default to https for production
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    const confirmUrl = `${protocol}://${host}/api/auth/confirm-email?token=${token}`;
+
     const mailOptions = {
       from: `"Batter Shop" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: `🔐 Verify your Batter Shop account`,
+      subject: `✅ Confirm your Batter Shop Registration`,
       html: `
-        <div style="font-family: sans-serif; padding: 20px;">
-          <h2 style="color: #6C63FF;">Welcome to Batter Shop!</h2>
-          <p>Please use the following 6-digit OTP to complete your registration:</p>
-          <div style="background: #f4f4f5; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
-            <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #1a1a2e;">${otp}</span>
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa; border-radius: 12px; overflow: hidden;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">🍚 Welcome to Batter Shop!</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 16px;">One more step to get started</p>
           </div>
-          <p style="color: #666; font-size: 14px;">This OTP is valid for 10 minutes.</p>
+          <div style="padding: 30px;">
+            <div style="background: white; border-radius: 10px; padding: 25px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+              <div style="font-size: 48px; margin-bottom: 15px;">📧</div>
+              <h2 style="color: #333; margin: 0 0 10px; font-size: 20px;">Confirm Your Email</h2>
+              <p style="color: #666; font-size: 15px; line-height: 1.6; margin-bottom: 25px;">
+                Thank you for registering! Please click the button below to verify your email address and activate your account.
+              </p>
+              <a href="${confirmUrl}" 
+                 style="display: inline-block; padding: 14px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; letter-spacing: 0.5px; box-shadow: 0 4px 15px rgba(102,126,234,0.4);">
+                ✓ Confirm My Email
+              </a>
+              <p style="color: #999; font-size: 13px; margin-top: 20px;">
+                This link expires in <strong>24 hours</strong>.
+              </p>
+            </div>
+            <p style="text-align: center; color: #bbb; font-size: 12px; margin-top: 20px;">
+              If you didn't register for Batter Shop, you can safely ignore this email.
+            </p>
+          </div>
         </div>
       `
     };
 
     await sendMailWithRetry(mailOptions);
+    console.log(`✉️  Confirmation email sent to ${email}`);
     return true;
   } catch (error) {
-    console.error('❌ Failed to send OTP email after all retries:', error.message);
+    console.error('❌ Failed to send confirmation email after all retries:', error.message);
     return false;
   }
 }
 
-module.exports = { sendOrderNotification, sendPasswordResetEmail, sendRegistrationOTP };
+module.exports = { sendOrderNotification, sendPasswordResetEmail, sendConfirmationEmail };

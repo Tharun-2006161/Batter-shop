@@ -22,23 +22,6 @@ async function start() {
   app.use('/api/orders', orderRoutes);
   app.use('/api/admin', adminRoutes);
 
-  // --- DEBUG ROUTE FOR RENDER EMAIL TESTING ---
-  app.get('/test-email', async (req, res) => {
-    try {
-      const { sendRegistrationOTP } = require('./email');
-      const testOtp = '123456';
-      const result = await sendRegistrationOTP(process.env.SMTP_USER, testOtp);
-      if (result) {
-        res.json({ success: true, message: 'Test email sent!', to: process.env.SMTP_USER });
-      } else {
-        res.status(500).json({ success: false, error: 'All email attempts failed. Check server logs.' });
-      }
-    } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-  // ------------------------------------------
-
   app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
   const PORT = process.env.PORT || 3000;

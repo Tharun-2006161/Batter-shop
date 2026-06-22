@@ -32,6 +32,9 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  confirmationToken: String,
+  confirmationExpires: Date,
+  // Keep legacy fields for backward compat with existing users
   verification_otp: String,
   otp_expires: Date,
   resetPasswordToken: String,

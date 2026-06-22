@@ -44,7 +44,7 @@ function render() {
     case 'admin-login': html = Pages.adminLogin(); break;
     case 'forgot-password': html = Pages.forgotPassword(); break;
     case 'reset-password': html = Pages.resetPassword(); break;
-    case 'verify-otp': html = Pages.verifyOtp(); break;
+    case 'check-email': html = Pages.checkEmail(); break;
     case 'order':
       if (!user) return navigateTo('login');
       html = Pages.order(); break;
@@ -82,8 +82,8 @@ async function handleLogin(e) {
   } catch (err) { 
     if (err.message.includes('verify your email')) {
       pendingVerificationEmail = document.getElementById('loginEmail').value;
-      toast(err.message, 'warning');
-      navigateTo('verify-otp');
+      toast('Please check your email for the confirmation link.', 'warning');
+      navigateTo('check-email');
     } else {
       toast(err.message, 'error'); 
     }
@@ -92,33 +92,57 @@ async function handleLogin(e) {
 
 async function handleRegister(e) {
   e.preventDefault();
+  const btn = document.getElementById('registerBtn');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Sending confirmation...';
+  
   try {
+    const email = document.getElementById('regEmail').value;
+    pendingVerificationEmail = email;
+    
     const data = await API.post('/auth/register', {
       name: document.getElementById('regName').value,
-      email: document.getElementById('regEmail').value,
+      email: email,
       phone: document.getElementById('regPhone').value,
       password: document.getElementById('regPassword').value
     });
-    API.setToken(data.token);
-    API.setUser(data.user);
-    toast('Registration successful! Welcome, ' + data.user.name + '!', 'success');
-    navigateTo('order');
-  } catch (err) { toast(err.message, 'error'); }
+
+    // Registration sends a confirmation email - show the check-email page
+    toast(data.message, 'success');
+    navigateTo('check-email');
+  } catch (err) { 
+    toast(err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
 }
 
-async function handleVerifyOTP(e) {
-  e.preventDefault();
+async function resendConfirmation() {
+  const btn = document.getElementById('resendBtn');
+  if (!pendingVerificationEmail) {
+    toast('No email to resend to. Please register again.', 'error');
+    return;
+  }
+  
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  
   try {
-    if (!pendingVerificationEmail) throw new Error("Email not found. Please try registering or logging in again.");
-    const data = await API.post('/auth/verify-otp', {
-      email: pendingVerificationEmail,
-      otp: document.getElementById('verifyOtpInput').value
+    const data = await API.post('/auth/resend-confirmation', {
+      email: pendingVerificationEmail
     });
-    API.setToken(data.token);
-    API.setUser(data.user);
-    toast('Email verified successfully! Welcome!', 'success');
-    navigateTo('order');
-  } catch (err) { toast(err.message, 'error'); }
+    toast(data.message, 'success');
+    btn.textContent = '✓ Sent!';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = '🔄 Resend Confirmation Email';
+    }, 5000);
+  } catch (err) {
+    toast(err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '🔄 Resend Confirmation Email';
+  }
 }
 
 async function handleAdminLogin(e) {
@@ -318,17 +342,38 @@ async function loadDashboard() {
     const data = await API.get('/orders/dashboard');
     dashboardData = data;
     const s = data.summary;
-    document.getElementById('dashStats').innerHTML = `
+      document.getElementById('dashStats').innerHTML = `
       <div class="stat-card primary"><div class="stat-icon">📦</div><div class="stat-value">${s.total_orders}</div><div class="stat-label">Total Orders</div></div>
       <div class="stat-card success"><div class="stat-icon">💰</div><div class="stat-value">₹${s.total_paid}</div><div class="stat-label">Total Paid</div></div>
       <div class="stat-card danger"><div class="stat-icon">⏳</div><div class="stat-value">₹${s.pending_balance}</div><div class="stat-label">Pending Balance</div></div>
       <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-value">₹${s.total_spent}</div><div class="stat-label">Total Ordered</div></div>`;
 
+    // Show Pay Pending Balance button if there's a pending balance
+    const paySection = document.getElementById('payPendingSection');
+    if (s.pending_balance > 0) {
+      paySection.innerHTML = `
+        <div style="background: linear-gradient(135deg, rgba(255,71,87,0.08), rgba(255,165,2,0.08)); border: 1px solid rgba(255,71,87,0.2); border-radius: 16px; padding: 1.25rem 1.5rem; margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="font-size: 1.05rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.3rem;">⚠️ You have a pending balance of <span style="color: var(--danger); font-size: 1.15rem;">₹${s.pending_balance}</span></div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary);">Clear your dues anytime using UPI, Cards, or Net Banking</div>
+          </div>
+          <button class="btn btn-primary btn-lg" onclick="handlePayPending(${s.pending_balance})" id="payPendingBtn" style="white-space: nowrap; animation: pulse 2s infinite;">
+            💳 Pay ₹${s.pending_balance} Now
+          </button>
+        </div>`;
+    } else {
+      paySection.innerHTML = '';
+    }
+
     if (data.recent_orders.length) {
-      let rows = data.recent_orders.map(o => `<tr><td>#${o.id}</td><td>${o.idli_qty} idli, ${o.dosa_qty} dosa</td><td>₹${o.total_amount}</td>
-        <td><span class="badge ${o.payment_status==='paid'?'badge-success':'badge-warning'}">${o.payment_status}</span></td>
+      let rows = data.recent_orders.map(o => {
+        const isPending = o.payment_status === 'pending' || o.payment_status === 'payment_pending' || o.payment_status === 'failed';
+        const payBtn = isPending ? `<button class="btn btn-sm btn-primary" onclick="handlePaySingleOrder('${o.id}', ${o.total_amount})" style="font-size:0.7rem;padding:0.3rem 0.7rem;">💳 Pay Now</button>` : '';
+        return `<tr><td>#${o.id}</td><td>${o.idli_qty} idli, ${o.dosa_qty} dosa</td><td>₹${o.total_amount}</td>
+        <td><span class="badge ${o.payment_status==='paid'?'badge-success':'badge-warning'}">${o.payment_status}</span> ${payBtn}</td>
         <td><span class="badge badge-info">${o.order_status}</span></td>
-        <td>${new Date(o.created_at).toLocaleDateString('en-IN')}</td></tr>`).join('');
+        <td>${new Date(o.created_at).toLocaleDateString('en-IN')}</td></tr>`;
+      }).join('');
       document.getElementById('dashOrders').innerHTML = `<table class="data-table"><thead><tr><th>ID</th><th>Items</th><th>Amount</th><th>Payment</th><th>Status</th><th>Date</th></tr></thead><tbody>${rows}</tbody></table>`;
     } else {
       document.getElementById('dashOrders').innerHTML = '<div class="empty-state"><span class="empty-icon">📦</span><p class="empty-text">No orders yet. Place your first order!</p></div>';
@@ -476,6 +521,76 @@ function showDayDetails(year, month, day) {
   document.getElementById('dayDetailsView').innerHTML = `<div style="padding:1rem">${content}</div>`;
 }
 
+// Pay pending balance via Razorpay
+async function handlePayPending(amount) {
+  const btn = document.getElementById('payPendingBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Processing...'; }
+
+  try {
+    // Create Razorpay order for pending amount
+    const orderData = await API.post('/orders/pay-pending', { amount });
+    const keyData = await API.get('/orders/razorpay-key');
+
+    if (!keyData.razorpay_enabled) {
+      toast('Online payments are not configured yet.', 'error');
+      if (btn) { btn.disabled = false; btn.textContent = `💳 Pay ₹${amount} Now`; }
+      return;
+    }
+
+    const options = {
+      key: keyData.key_id,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: 'Batter Shop',
+      description: `Pending Balance Payment - ₹${orderData.pay_amount}`,
+      order_id: orderData.razorpay_order_id,
+      prefill: {
+        name: orderData.customer.name,
+        email: orderData.customer.email,
+        contact: orderData.customer.phone
+      },
+      theme: { color: '#667eea' },
+      handler: async function(response) {
+        try {
+          const verifyData = await API.post('/orders/verify-pending-payment', {
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            pay_amount: orderData.pay_amount
+          });
+          toast(verifyData.message, 'success');
+          loadDashboard(); // Refresh dashboard
+        } catch (err) {
+          toast('Payment verification failed: ' + err.message, 'error');
+          if (btn) { btn.disabled = false; btn.textContent = `💳 Pay ₹${amount} Now`; }
+        }
+      },
+      modal: {
+        ondismiss: function() {
+          toast('Payment cancelled.', 'info');
+          if (btn) { btn.disabled = false; btn.textContent = `💳 Pay ₹${amount} Now`; }
+        }
+      }
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.on('payment.failed', function(response) {
+      toast('Payment failed: ' + (response.error.description || 'Please try again'), 'error');
+      if (btn) { btn.disabled = false; btn.textContent = `💳 Pay ₹${amount} Now`; }
+    });
+    rzp.open();
+  } catch (err) {
+    toast(err.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = `💳 Pay ₹${amount} Now`; }
+  }
+}
+
+// Pay for a single unpaid order
+async function handlePaySingleOrder(orderId, amount) {
+  // Use the same pending payment flow with the specific order amount
+  await handlePayPending(amount);
+}
+
 // Admin tab switching
 async function showAdminTab(tab) {
   document.querySelectorAll('.admin-tab').forEach((t, i) => {
@@ -553,11 +668,12 @@ window.addEventListener('hashchange', () => {
   render();
 });
 
-// Init
+// Init - when user opens the website, redirect logged-in users to order page
 (function init() {
   currentPage = window.location.hash.slice(1).split('?')[0] || 'home';
   const user = API.getUser();
-  if (user && currentPage === 'home') {
+  if (user && (currentPage === 'home' || currentPage === '')) {
+    // Logged-in users go directly to the order page
     currentPage = user.role === 'admin' ? 'admin' : 'order';
   }
   render();

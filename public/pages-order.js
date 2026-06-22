@@ -28,6 +28,7 @@ Pages.dashboard = function() {
   return `<div class="page fade-in">
     <div class="page-header"><h1 class="page-title">📊 My Dashboard</h1><p class="page-subtitle">Your orders and payment summary</p></div>
     <div class="stats-grid" id="dashStats"><div class="spinner"></div></div>
+    <div id="payPendingSection"></div>
     <div class="calendar-layout" style="margin-top:2rem">
       <div class="calendar-left">
         <div class="section-header">

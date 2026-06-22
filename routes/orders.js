@@ -224,4 +224,97 @@ router.get('/dashboard', authenticate, async (req, res) => {
   } catch (error) { console.error('Dashboard error:', error); res.status(500).json({ error: 'Failed to fetch dashboard.' }); }
 });
 
+// Create Razorpay order for paying pending balance (no booking window restriction)
+router.post('/pay-pending', authenticate, async (req, res) => {
+  try {
+    const rzp = getRazorpay();
+    if (!rzp) return res.status(400).json({ error: 'Online payments are not configured yet.' });
+
+    const { amount } = req.body;
+    if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid payment amount.' });
+
+    // Calculate actual pending balance
+    const uid = req.user.id;
+    const ObjectId = require('mongoose').Types.ObjectId.createFromHexString(uid);
+
+    const creditAgg = await Payment.aggregate([{ $match: { user_id: ObjectId, payment_type: 'credit' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
+    const totalCredit = creditAgg.length ? creditAgg[0].total : 0;
+
+    const paidAgg = await Payment.aggregate([{ $match: { user_id: ObjectId, payment_type: 'debit' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
+    const totalPaid = paidAgg.length ? paidAgg[0].total : 0;
+
+    const pendingBalance = Math.max(0, totalCredit - totalPaid);
+    const payAmount = Math.min(parseFloat(amount), pendingBalance);
+
+    if (payAmount <= 0) return res.status(400).json({ error: 'No pending balance to pay.' });
+
+    // Create Razorpay order (amount in paise)
+    const rzpOrder = await rzp.orders.create({
+      amount: Math.round(payAmount * 100),
+      currency: 'INR',
+      receipt: `pending_${uid}_${Date.now()}`,
+      notes: { user_id: uid, type: 'pending_balance_payment', amount: String(payAmount) }
+    });
+
+    const customer = await User.findById(uid).select('name email phone');
+
+    res.json({
+      razorpay_order_id: rzpOrder.id,
+      amount: rzpOrder.amount,
+      currency: rzpOrder.currency,
+      pay_amount: payAmount,
+      customer: { name: customer.name, email: customer.email, phone: customer.phone }
+    });
+  } catch (error) {
+    console.error('Pay pending error:', error);
+    res.status(500).json({ error: 'Failed to create payment order.' });
+  }
+});
+
+// Verify payment for pending balance
+router.post('/verify-pending-payment', authenticate, async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, pay_amount } = req.body;
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !pay_amount) {
+      return res.status(400).json({ error: 'Missing payment verification data.' });
+    }
+
+    // Verify signature
+    const body = razorpay_order_id + '|' + razorpay_payment_id;
+    const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET).update(body).digest('hex');
+
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({ error: 'Payment verification failed.' });
+    }
+
+    const amount = parseFloat(pay_amount);
+
+    // Record payment as debit
+    await Payment.create({
+      user_id: req.user.id, amount,
+      payment_type: 'debit', payment_method: 'online',
+      description: `Pending Balance Payment via Razorpay (${razorpay_payment_id})`
+    });
+
+    // Mark unpaid orders as paid (oldest first) up to the paid amount
+    let remaining = amount;
+    const unpaidOrders = await Order.find({ user_id: req.user.id, payment_status: 'pending', payment_method: 'pay_later' }).sort({ createdAt: 1 });
+    for (const order of unpaidOrders) {
+      if (remaining >= order.total_amount) {
+        order.payment_status = 'paid';
+        order.razorpay_payment_id = razorpay_payment_id;
+        await order.save();
+        remaining -= order.total_amount;
+      } else {
+        break;
+      }
+    }
+
+    res.json({ message: `Payment of ₹${amount} received successfully! Your pending balance has been updated.` });
+  } catch (error) {
+    console.error('Verify pending payment error:', error);
+    res.status(500).json({ error: 'Payment verification failed.' });
+  }
+});
+
 module.exports = router;
