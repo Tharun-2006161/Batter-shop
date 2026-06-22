@@ -119,9 +119,13 @@ async function handleRegister(e) {
       password: document.getElementById('regPassword').value
     });
 
-    // Registration sends a confirmation email - show the check-email page
+    // Handle fallback for Render Free Tier where email isn't sent
     toast(data.message, 'success');
-    navigateTo('check-email');
+    if (data.requires_confirmation === false) {
+      navigateTo('login');
+    } else {
+      navigateTo('check-email');
+    }
   } catch (err) { 
     toast(err.message, 'error');
     btn.disabled = false;

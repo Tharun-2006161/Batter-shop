@@ -57,9 +57,15 @@ router.post('/register', async (req, res) => {
         requires_confirmation: true
       });
     } else {
+      // Fallback for Render Free Tier: If email fails due to port blocking, auto-verify the user
+      user.is_verified = true;
+      user.confirmationToken = undefined;
+      user.confirmationExpires = undefined;
+      await user.save();
+      
       res.status(201).json({ 
-        message: 'Account created, but we could not send the confirmation email. Please try logging in later or contact support.',
-        requires_confirmation: true
+        message: 'Registration successful! (Email skipped due to server restrictions). You can now login.',
+        requires_confirmation: false
       });
     }
   } catch (error) {
