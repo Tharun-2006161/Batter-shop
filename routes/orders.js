@@ -267,7 +267,7 @@ router.post('/pay-pending', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('Pay pending error:', error);
-    res.status(500).json({ error: 'Failed to create payment order.' });
+    res.status(500).json({ error: error.error?.description || error.message || 'Failed to create payment order.' });
   }
 });
 
