@@ -22,6 +22,34 @@ async function start() {
   app.use('/api/orders', orderRoutes);
   app.use('/api/admin', adminRoutes);
 
+  // Temporary: Test email endpoint for debugging
+  app.get('/api/test-email', async (req, res) => {
+    try {
+      const nodemailer = require('nodemailer');
+      const transport = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
+      });
+
+      const info = await transport.sendMail({
+        from: `"Batter Shop" <${process.env.SMTP_USER}>`,
+        to: process.env.SMTP_USER, // Send to self
+        subject: 'Test Email from Batter Shop',
+        text: 'If you received this, email is working!'
+      });
+
+      transport.close();
+      res.json({ success: true, messageId: info.messageId, smtp_user: process.env.SMTP_USER ? 'SET' : 'MISSING', smtp_pass: process.env.SMTP_PASS ? 'SET' : 'MISSING' });
+    } catch (error) {
+      res.json({ success: false, error: error.message, code: error.code, smtp_user: process.env.SMTP_USER ? 'SET' : 'MISSING', smtp_pass: process.env.SMTP_PASS ? 'SET' : 'MISSING' });
+    }
+  });
+
   app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
   const PORT = process.env.PORT || 3000;
