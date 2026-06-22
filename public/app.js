@@ -14,6 +14,17 @@ function toast(msg, type = 'info') {
   setTimeout(() => t.remove(), 3000);
 }
 
+function togglePassword(inputId, toggle) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    toggle.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    toggle.textContent = '👁️';
+  }
+}
+
 function navigateTo(page) {
   currentPage = page;
   window.location.hash = page;
