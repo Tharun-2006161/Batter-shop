@@ -71,36 +71,6 @@ const Pages = {
     </div></div>`;
   },
 
-  // "Check your email" page shown after registration
-  checkEmail() {
-    const email = pendingVerificationEmail || 'your email';
-    return `<div class="auth-page"><div class="auth-card fade-in" style="max-width: 500px;">
-      <div class="auth-header">
-        <span class="auth-icon" style="font-size: 56px;">📨</span>
-        <h2 class="auth-title">Check Your Email</h2>
-        <p class="auth-subtitle">We've sent a confirmation link</p>
-      </div>
-      <div style="background: rgba(102,126,234,0.08); border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid rgba(102,126,234,0.15);">
-        <p style="color: var(--text-secondary); font-size: 15px; line-height: 1.7; margin: 0;">
-          A confirmation email has been sent to<br>
-          <strong style="color: var(--primary); font-size: 16px;">${email}</strong><br><br>
-          Click the link in the email to verify your account. Once verified, you can log in and start ordering!
-        </p>
-      </div>
-      <div style="margin-top: 16px;">
-        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">
-          📌 Didn't receive it? Check your spam folder or click below to resend.
-        </p>
-        <button class="btn btn-outline btn-block" onclick="resendConfirmation()" id="resendBtn">
-          🔄 Resend Confirmation Email
-        </button>
-      </div>
-      <p class="auth-footer" style="margin-top: 24px;">
-        Already verified? <span class="auth-link" onclick="navigateTo('login')">Login here →</span>
-      </p>
-    </div></div>`;
-  },
-
   adminLogin() {
     return `<div class="auth-page"><div class="auth-card fade-in">
       <div class="auth-header"><span class="auth-icon">🛡️</span><h2 class="auth-title">Admin Login</h2><p class="auth-subtitle">Access the management panel</p></div>

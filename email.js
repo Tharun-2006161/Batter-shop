@@ -185,4 +185,4 @@ async function sendConfirmationEmail(email, token, host) {
   }
 }
 
-module.exports = { sendOrderNotification, sendPasswordResetEmail, sendConfirmationEmail };
+module.exports = { sendOrderNotification, sendPasswordResetEmail };

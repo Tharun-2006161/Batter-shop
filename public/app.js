@@ -3,7 +3,7 @@ let orderState = { idli: 0, dosa: 0, idliPrice: 25, dosaPrice: 25, paymentMethod
 let currentPage = 'home';
 let currentCalendarDate = new Date();
 let dashboardData = null;
-let pendingVerificationEmail = null;
+
 
 function toast(msg, type = 'info') {
   const c = document.getElementById('toastContainer');
@@ -55,7 +55,6 @@ function render() {
     case 'admin-login': html = Pages.adminLogin(); break;
     case 'forgot-password': html = Pages.forgotPassword(); break;
     case 'reset-password': html = Pages.resetPassword(); break;
-    case 'check-email': html = Pages.checkEmail(); break;
     case 'order':
       if (!user) return navigateTo('login');
       html = Pages.order(); break;
@@ -81,9 +80,8 @@ function render() {
 async function handleLogin(e) {
   e.preventDefault();
   try {
-    const email = document.getElementById('loginEmail').value;
     const data = await API.post('/auth/login', {
-      email,
+      email: document.getElementById('loginEmail').value,
       password: document.getElementById('loginPassword').value
     });
     API.setToken(data.token);
@@ -91,13 +89,7 @@ async function handleLogin(e) {
     toast('Welcome back, ' + data.user.name + '!', 'success');
     navigateTo(data.user.role === 'admin' ? 'admin' : 'order');
   } catch (err) { 
-    if (err.message.includes('verify your email')) {
-      pendingVerificationEmail = document.getElementById('loginEmail').value;
-      toast('Please check your email for the confirmation link.', 'warning');
-      navigateTo('check-email');
-    } else {
-      toast(err.message, 'error'); 
-    }
+    toast(err.message, 'error'); 
   }
 }
 
@@ -106,57 +98,22 @@ async function handleRegister(e) {
   const btn = document.getElementById('registerBtn');
   const originalText = btn.textContent;
   btn.disabled = true;
-  btn.textContent = 'Sending confirmation...';
+  btn.textContent = 'Registering...';
   
   try {
-    const email = document.getElementById('regEmail').value;
-    pendingVerificationEmail = email;
-    
     const data = await API.post('/auth/register', {
       name: document.getElementById('regName').value,
-      email: email,
+      email: document.getElementById('regEmail').value,
       phone: document.getElementById('regPhone').value,
       password: document.getElementById('regPassword').value
     });
 
-    // Handle fallback for Render Free Tier where email isn't sent
     toast(data.message, 'success');
-    if (data.requires_confirmation === false) {
-      navigateTo('login');
-    } else {
-      navigateTo('check-email');
-    }
+    navigateTo('login');
   } catch (err) { 
     toast(err.message, 'error');
     btn.disabled = false;
     btn.textContent = originalText;
-  }
-}
-
-async function resendConfirmation() {
-  const btn = document.getElementById('resendBtn');
-  if (!pendingVerificationEmail) {
-    toast('No email to resend to. Please register again.', 'error');
-    return;
-  }
-  
-  btn.disabled = true;
-  btn.textContent = 'Sending...';
-  
-  try {
-    const data = await API.post('/auth/resend-confirmation', {
-      email: pendingVerificationEmail
-    });
-    toast(data.message, 'success');
-    btn.textContent = '✓ Sent!';
-    setTimeout(() => {
-      btn.disabled = false;
-      btn.textContent = '🔄 Resend Confirmation Email';
-    }, 5000);
-  } catch (err) {
-    toast(err.message, 'error');
-    btn.disabled = false;
-    btn.textContent = '🔄 Resend Confirmation Email';
   }
 }
 
