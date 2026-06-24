@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
+const User = require('./models/User');
 
 // Authenticate JWT token
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Access denied. No token provided.' });
@@ -10,6 +11,13 @@ function authenticate(req, res, next) {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Ensure the token matches the user's current active session
+    const user = await User.findById(decoded.id);
+    if (!user || user.current_token !== token) {
+      return res.status(401).json({ error: 'Session expired or logged in from another device.' });
+    }
+
     req.user = decoded;
     next();
   } catch (err) {

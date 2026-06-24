@@ -132,7 +132,12 @@ async function handleAdminLogin(e) {
   } catch (err) { toast(err.message, 'error'); }
 }
 
-function logout() {
+async function logout() {
+  try {
+    await API.post('/auth/logout');
+  } catch (e) {
+    // Ignore errors, clear local state anyway
+  }
   API.clearToken();
   toast('Logged out', 'info');
   navigateTo('home');

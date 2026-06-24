@@ -32,6 +32,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  current_token: {
+    type: String,
+    default: null
+  },
   confirmationToken: String,
   confirmationExpires: Date,
   // Keep legacy fields for backward compat with existing users

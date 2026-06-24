@@ -45,9 +45,20 @@ router.post('/login', async (req, res) => {
     const user = await User.findOne({ email });
     if (!user || !bcrypt.compareSync(password, user.password)) return res.status(401).json({ error: 'Invalid email or password.' });
 
+    // Prevent concurrent logins
+    if (user.current_token) {
+      try {
+        jwt.verify(user.current_token, process.env.JWT_SECRET);
+        return res.status(403).json({ error: 'This account is currently logged in on another device. Please logout there first.' });
+      } catch (err) {
+        // Token is expired or invalid, safe to overwrite
+      }
+    }
 
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role, name: user.name }, process.env.JWT_SECRET, { expiresIn: '12h' });
+    user.current_token = token;
+    await user.save();
 
-    const token = jwt.sign({ id: user._id, email: user.email, role: user.role, name: user.name }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ message: 'Login successful!', token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role } });
   } catch (error) {
     console.error('Login error:', error);
@@ -61,6 +72,19 @@ router.get('/me', authenticate, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found.' });
     res.json({ user: { id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role, created_at: user.createdAt } });
   } catch (error) { res.status(500).json({ error: 'Failed to fetch profile.' }); }
+});
+
+router.post('/logout', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (user) {
+      user.current_token = null;
+      await user.save();
+    }
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Logout failed.' });
+  }
 });
 
 router.post('/forgot-password', async (req, res) => {
