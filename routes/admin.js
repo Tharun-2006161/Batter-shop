@@ -92,10 +92,22 @@ router.post('/payments', async (req, res) => {
     const oid = new mongoose.Types.ObjectId(user_id);
     const crAgg = await Payment.aggregate([{ $match: { user_id: oid, payment_type: 'credit' } }, { $group: { _id: null, t: { $sum: '$amount' } } }]);
     const paAgg = await Payment.aggregate([{ $match: { user_id: oid, payment_type: 'debit' } }, { $group: { _id: null, t: { $sum: '$amount' } } }]);
-    const remaining = (crAgg[0]?.t || 0) - (paAgg[0]?.t || 0);
-    if (remaining <= 0) await Order.updateMany({ user_id, payment_status: 'pending' }, { payment_status: 'paid' });
+    const remaining_balance = (crAgg[0]?.t || 0) - (paAgg[0]?.t || 0);
 
-    res.json({ message: `Payment of ₹${amount} recorded for ${customer.name}.`, new_balance: Math.max(0, remaining) });
+    // Apply the payment to oldest unpaid orders
+    let remaining_to_apply = amount;
+    const unpaidOrders = await Order.find({ user_id, payment_status: 'pending' }).sort({ createdAt: 1 });
+    for (const order of unpaidOrders) {
+      if (remaining_to_apply >= order.total_amount) {
+        order.payment_status = 'paid';
+        await order.save();
+        remaining_to_apply -= order.total_amount;
+      } else {
+        break;
+      }
+    }
+
+    res.json({ message: `Payment of ₹${amount} recorded for ${customer.name}.`, new_balance: Math.max(0, remaining_balance) });
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to record payment.' }); }
 });
 

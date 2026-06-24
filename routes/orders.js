@@ -213,7 +213,7 @@ router.get('/dashboard', authenticate, async (req, res) => {
 
     res.json({
       summary: { total_orders: totalOrders, total_spent: totalSpent, total_paid: totalPaid, pending_balance: Math.max(0, pending), outstanding_amount: Math.max(0, pending) },
-      recent_orders: recentOrders.map(o => ({ ...o.toObject(), id: o._id, created_at: o.createdAt })),
+      recent_orders: recentOrders.map(o => ({ ...o.toObject(), id: o._id, created_at: o.createdAt, updated_at: o.updatedAt })),
       payment_history: paymentHistory.map(p => {
         const obj = p.toObject();
         return { ...obj, id: obj._id, created_at: obj.createdAt,
