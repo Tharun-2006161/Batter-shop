@@ -21,8 +21,7 @@ function renderAdminOverview(d) {
     <div class="stat-card success"><div class="stat-icon">💰</div><div class="stat-value">₹${t.total_amount}</div><div class="stat-label">Total Amount Today</div></div>
     <div class="stat-card" style="border-color:rgba(46,213,115,0.3)"><div class="stat-icon">💳</div><div class="stat-value">₹${t.online_received}</div><div class="stat-label">Online Payment Received</div></div>
     <div class="stat-card danger"><div class="stat-icon">⏳</div><div class="stat-value">₹${t.pending_amount}</div><div class="stat-label">Pending (Pay Later)</div></div>
-    <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value">${t.new_customers}</div><div class="stat-label">New Customers Today</div></div>
-    <div class="stat-card primary"><div class="stat-icon">👤</div><div class="stat-value">${t.total_customers}</div><div class="stat-label">Total Customers</div></div>
+    <div class="stat-card primary"><div class="stat-icon">👥</div><div class="stat-value">${t.total_customers}</div><div class="stat-label">Total Customers</div></div>
   </div>`;
 }
 
