@@ -55,8 +55,8 @@ router.get('/booking-status', (req, res) => {
   const istDate = new Date(istString);
   const h = istDate.getHours(), m = istDate.getMinutes();
   const t = h * 60 + m;
-  const isOpen = t >= 20 * 60 || t <= 14 * 60;
-  res.json({ isOpen, currentTime: `${h}:${String(m).padStart(2,'0')}`, bookingWindow: '8:00 PM - 2:00 PM',
+  const isOpen = t >= 20 * 60 || t <= 16 * 60;
+  res.json({ isOpen, currentTime: `${h}:${String(m).padStart(2,'0')}`, bookingWindow: '8:00 PM - 4:00 PM',
     message: isOpen ? 'Booking is open! Place your order now.' : 'Booking is closed. Opens at 8:00 PM.' });
 });
 
@@ -197,17 +197,18 @@ router.get('/my', authenticate, async (req, res) => {
 router.get('/dashboard', authenticate, async (req, res) => {
   try {
     const uid = req.user.id;
+    const ObjectId = require('mongoose').Types.ObjectId.createFromHexString(uid);
     const totalOrders = await Order.countDocuments({ user_id: uid });
-    const spentAgg = await Order.aggregate([{ $match: { user_id: require('mongoose').Types.ObjectId.createFromHexString(uid) } }, { $group: { _id: null, total: { $sum: '$total_amount' } } }]);
+    const spentAgg = await Order.aggregate([{ $match: { user_id: ObjectId } }, { $group: { _id: null, total: { $sum: '$total_amount' } } }]);
     const totalSpent = spentAgg.length ? spentAgg[0].total : 0;
 
-    const paidAgg = await Payment.aggregate([{ $match: { user_id: require('mongoose').Types.ObjectId.createFromHexString(uid), payment_type: 'debit' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
+    const paidAgg = await Payment.aggregate([{ $match: { user_id: ObjectId, payment_type: 'debit' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
     const totalPaid = paidAgg.length ? paidAgg[0].total : 0;
 
-    const creditAgg = await Payment.aggregate([{ $match: { user_id: require('mongoose').Types.ObjectId.createFromHexString(uid), payment_type: 'credit' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
-    const totalCredit = creditAgg.length ? creditAgg[0].total : 0;
-
-    const pending = totalCredit - totalPaid;
+    // Calculate pending balance from unpaid orders directly (not from credit-debit ledger)
+    // This avoids the bug where online-payment debits offset pay-later credits
+    const pendingAgg = await Order.aggregate([{ $match: { user_id: ObjectId, payment_status: 'pending' } }, { $group: { _id: null, total: { $sum: '$total_amount' } } }]);
+    const pending = pendingAgg.length ? pendingAgg[0].total : 0;
     const recentOrders = await Order.find({ user_id: uid }).sort({ createdAt: -1 });
     const paymentHistory = await Payment.find({ user_id: uid }).sort({ createdAt: -1 });
 
@@ -233,17 +234,12 @@ router.post('/pay-pending', authenticate, async (req, res) => {
     const { amount } = req.body;
     if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid payment amount.' });
 
-    // Calculate actual pending balance
+    // Calculate actual pending balance from unpaid orders
     const uid = req.user.id;
     const ObjectId = require('mongoose').Types.ObjectId.createFromHexString(uid);
 
-    const creditAgg = await Payment.aggregate([{ $match: { user_id: ObjectId, payment_type: 'credit' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
-    const totalCredit = creditAgg.length ? creditAgg[0].total : 0;
-
-    const paidAgg = await Payment.aggregate([{ $match: { user_id: ObjectId, payment_type: 'debit' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
-    const totalPaid = paidAgg.length ? paidAgg[0].total : 0;
-
-    const pendingBalance = Math.max(0, totalCredit - totalPaid);
+    const pendingAgg = await Order.aggregate([{ $match: { user_id: ObjectId, payment_status: 'pending' } }, { $group: { _id: null, total: { $sum: '$total_amount' } } }]);
+    const pendingBalance = pendingAgg.length ? pendingAgg[0].total : 0;
     const payAmount = Math.min(parseFloat(amount), pendingBalance);
 
     if (payAmount <= 0) return res.status(400).json({ error: 'No pending balance to pay.' });
