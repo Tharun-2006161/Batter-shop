@@ -41,6 +41,9 @@ router.get('/dashboard', async (req, res) => {
     // 7. New customers registered today
     const todayCustomers = await User.countDocuments({ role: 'customer', createdAt: { $gte: today } });
 
+    // 8. Total customers (all-time)
+    const totalCustomers = await User.countDocuments({ role: 'customer' });
+
     res.json({
       today: {
         orders: todayOrders,
@@ -49,7 +52,8 @@ router.get('/dashboard', async (req, res) => {
         total_amount: td.total,
         online_received: todayOnlineReceived,
         pending_amount: todayPending,
-        new_customers: todayCustomers
+        new_customers: todayCustomers,
+        total_customers: totalCustomers
       }
     });
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to fetch admin dashboard.' }); }
