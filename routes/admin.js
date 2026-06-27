@@ -14,24 +14,43 @@ router.get('/dashboard', async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // 1. Today's total orders
     const todayOrders = await Order.countDocuments({ createdAt: { $gte: today } });
+
+    // 2 & 3. Today's idli and dosa counts + 4. Today's total amount
     const todayAgg = await Order.aggregate([
       { $match: { createdAt: { $gte: today } } },
       { $group: { _id: null, total: { $sum: '$total_amount' }, idli: { $sum: '$idli_qty' }, dosa: { $sum: '$dosa_qty' } } }
     ]);
     const td = todayAgg[0] || { total: 0, idli: 0, dosa: 0 };
 
-    const creditAgg = await Payment.aggregate([{ $match: { payment_type: 'credit' } }, { $group: { _id: null, t: { $sum: '$amount' } } }]);
-    const debitAgg = await Payment.aggregate([{ $match: { payment_type: 'debit' } }, { $group: { _id: null, t: { $sum: '$amount' } } }]);
-    const totalCredit = creditAgg[0]?.t || 0;
-    const totalPaid = debitAgg[0]?.t || 0;
-    const totalCustomers = await User.countDocuments({ role: 'customer' });
-    const allAgg = await Order.aggregate([{ $group: { _id: null, count: { $sum: 1 }, total: { $sum: '$total_amount' } } }]);
-    const all = allAgg[0] || { count: 0, total: 0 };
+    // 5. Total received via online payment today (debit payments made today)
+    const todayOnlineAgg = await Payment.aggregate([
+      { $match: { createdAt: { $gte: today }, payment_type: 'debit', payment_method: 'online' } },
+      { $group: { _id: null, t: { $sum: '$amount' } } }
+    ]);
+    const todayOnlineReceived = todayOnlineAgg[0]?.t || 0;
+
+    // 6. Pending amount today (pay_later orders placed today that are still unpaid)
+    const todayPendingAgg = await Order.aggregate([
+      { $match: { createdAt: { $gte: today }, payment_status: 'pending' } },
+      { $group: { _id: null, t: { $sum: '$total_amount' } } }
+    ]);
+    const todayPending = todayPendingAgg[0]?.t || 0;
+
+    // 7. New customers registered today
+    const todayCustomers = await User.countDocuments({ role: 'customer', createdAt: { $gte: today } });
 
     res.json({
-      today: { orders: todayOrders, revenue: td.total, idli_packets: td.idli, dosa_packets: td.dosa },
-      overall: { total_orders: all.count, total_revenue: all.total, total_customers: totalCustomers, total_pending: Math.max(0, totalCredit - totalPaid), total_collected: totalPaid }
+      today: {
+        orders: todayOrders,
+        idli_packets: td.idli,
+        dosa_packets: td.dosa,
+        total_amount: td.total,
+        online_received: todayOnlineReceived,
+        pending_amount: todayPending,
+        new_customers: todayCustomers
+      }
     });
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to fetch admin dashboard.' }); }
 });
@@ -71,10 +90,12 @@ router.get('/customers', async (req, res) => {
     const customers = await User.find({ role: 'customer' }).select('-password').sort({ name: 1 });
     const result = await Promise.all(customers.map(async (c) => {
       const orderCount = await Order.countDocuments({ user_id: c._id });
-      const crAgg = await Payment.aggregate([{ $match: { user_id: c._id, payment_type: 'credit' } }, { $group: { _id: null, t: { $sum: '$amount' } } }]);
+      // Calculate pending balance from unpaid orders (not credit-debit ledger)
+      const pendingAgg = await Order.aggregate([{ $match: { user_id: c._id, payment_status: 'pending' } }, { $group: { _id: null, t: { $sum: '$total_amount' } } }]);
+      const pendingBalance = pendingAgg[0]?.t || 0;
       const paAgg = await Payment.aggregate([{ $match: { user_id: c._id, payment_type: 'debit' } }, { $group: { _id: null, t: { $sum: '$amount' } } }]);
-      const tc = crAgg[0]?.t || 0, tp = paAgg[0]?.t || 0;
-      return { id: c._id, name: c.name, email: c.email, phone: c.phone, created_at: c.createdAt, order_count: orderCount, total_credit: tc, total_paid: tp, pending_balance: Math.max(0, tc - tp) };
+      const tp = paAgg[0]?.t || 0;
+      return { id: c._id, name: c.name, email: c.email, phone: c.phone, created_at: c.createdAt, order_count: orderCount, total_paid: tp, pending_balance: pendingBalance };
     }));
     res.json({ customers: result });
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to fetch customers.' }); }

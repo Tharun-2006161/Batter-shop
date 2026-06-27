@@ -13,15 +13,15 @@ Pages.admin = function() {
 };
 
 function renderAdminOverview(d) {
+  const t = d.today;
   return `<div class="stats-grid">
-    <div class="stat-card primary"><div class="stat-icon">📦</div><div class="stat-value">${d.today.orders}</div><div class="stat-label">Today's Orders</div></div>
-    <div class="stat-card success"><div class="stat-icon">💰</div><div class="stat-value">₹${d.today.revenue}</div><div class="stat-label">Today's Revenue</div></div>
-    <div class="stat-card"><div class="stat-icon">🫘</div><div class="stat-value">${d.today.idli_packets}</div><div class="stat-label">Idli Packets Today</div></div>
-    <div class="stat-card"><div class="stat-icon">🥞</div><div class="stat-value">${d.today.dosa_packets}</div><div class="stat-label">Dosa Packets Today</div></div>
-    <div class="stat-card danger"><div class="stat-icon">⏳</div><div class="stat-value">₹${d.overall.total_pending}</div><div class="stat-label">Total Pending</div></div>
-    <div class="stat-card success"><div class="stat-icon">✅</div><div class="stat-value">₹${d.overall.total_collected}</div><div class="stat-label">Total Collected</div></div>
-    <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value">${d.overall.total_customers}</div><div class="stat-label">Total Customers</div></div>
-    <div class="stat-card primary"><div class="stat-icon">📊</div><div class="stat-value">₹${d.overall.total_revenue}</div><div class="stat-label">All-Time Revenue</div></div>
+    <div class="stat-card primary"><div class="stat-icon">📦</div><div class="stat-value">${t.orders}</div><div class="stat-label">Today's Total Orders</div></div>
+    <div class="stat-card"><div class="stat-icon">🫘</div><div class="stat-value">${t.idli_packets}</div><div class="stat-label">Total Idli Packets Today</div></div>
+    <div class="stat-card"><div class="stat-icon">🥞</div><div class="stat-value">${t.dosa_packets}</div><div class="stat-label">Total Dosa Packets Today</div></div>
+    <div class="stat-card success"><div class="stat-icon">💰</div><div class="stat-value">₹${t.total_amount}</div><div class="stat-label">Total Amount Today</div></div>
+    <div class="stat-card" style="border-color:rgba(46,213,115,0.3)"><div class="stat-icon">💳</div><div class="stat-value">₹${t.online_received}</div><div class="stat-label">Online Payment Received</div></div>
+    <div class="stat-card danger"><div class="stat-icon">⏳</div><div class="stat-value">₹${t.pending_amount}</div><div class="stat-label">Pending (Pay Later)</div></div>
+    <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value">${t.new_customers}</div><div class="stat-label">New Customers Today</div></div>
   </div>`;
 }
 
