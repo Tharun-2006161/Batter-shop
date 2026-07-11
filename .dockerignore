@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log*
+.env
+.git
+.gitignore
+batter_shop.db
+README.md
+*.md
+Thumbs.db
+.DS_Store
